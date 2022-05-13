@@ -1,30 +1,14 @@
+import os
+import sys
+import time
+import requests
+from http import HTTPStatus
+import logging
 from logging import StreamHandler
 from dotenv import load_dotenv
 from telegram import Bot
 import exceptions as err
-import requests
-import logging
-import time
-import sys
-import os
 
-
-LOG_FORMAT = '%(asctime)s - %(levelname)s - %(message)s - %(funcName)s'
-logging.basicConfig(
-    filename='bot_main.log',
-    level=logging.DEBUG,
-    format=LOG_FORMAT,
-    filemode='w',
-)
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-handler = StreamHandler(stream=sys.stdout)
-formatter = logging.Formatter(
-    '%(asctime)s - %(levelname)s - %(message)s - %(funcName)s'
-)
-handler.setFormatter(formatter)
-logger.addHandler(handler)
 
 load_dotenv()
 
@@ -40,16 +24,18 @@ HOMEWORK_STATUSES = {
     'reviewing': 'Работа взята на проверку ревьюером.',
     'rejected': 'Работа проверена: у ревьюера есть замечания.'
 }
+LOG_FORMAT = '%(asctime)s - %(levelname)s - %(message)s - %(funcName)s'
 
 
 def send_message(bot, message):
     """Отправка сообщений в Telegram чат."""
     try:
+        logger.info('Отправка нового сообщения')
         bot.send_message(TELEGRAM_CHAT_ID, message)
-        logger.info('Сообщение успешно отправлено')
     except Exception as error:
-        logger.error('Ошибка при отправке сообщения')
         raise Exception(f'Ошибка при отправке сообщения: {error}')
+    else:
+        logger.info('Сообщение успешно отправлено')
 
 
 def get_api_answer(current_timestamp):
@@ -62,51 +48,37 @@ def get_api_answer(current_timestamp):
     try:
         response = requests.get(ENDPOINT, headers=HEADERS, params=params)
     except Exception as error:
-        logger.error(error, exc_info=True)
         raise err.RequestsError(f'Ошибка запроса API: {error}')
-    if response.status_code != 200:
+    if response.status_code != HTTPStatus.OK:
         status_code = response.status_code
-        logger.error('Ошибка ответа API = response.status_code != 200')
-        raise err.ResponseError(f'Ошибка ответа API {status_code}')
+        raise err.ResponseError(
+            f'Ошибка ответа API {status_code} != {HTTPStatus.OK}'
+        )
     return response.json()
 
 
 def check_response(response):
     """Проверка ответа API на корректность."""
-    if isinstance(response, dict):
-        try:
-            homeworks = response.get('homeworks')
-        except KeyError:
-            logger.error('Ошибка словаря по ключу homeworks')
-            raise KeyError('Ошибка словаря по ключу homeworks')
-        try:
-            homework = homeworks[0]
-        except IndexError:
-            logger.error('Список домашних работ пуст')
-            raise IndexError('Список домашних работ пуст')
-        return homework
-    else:
-        logger.error('Проверить type параметра response = dict')
-        raise TypeError('Проверить type параметра response = dict')
+    if not isinstance(response, dict):
+        raise TypeError('Проверить type параметра response -> dict')
+    homeworks = response.get('homeworks')
+    if not homeworks:
+        raise Exception('Список домашних работ пуст')
+    elif type(homeworks) != list:
+        raise Exception('Проверить параметр "homeworks" -> list')
+    homework = homeworks[0]
+    return homework
 
 
 def parse_status(homework):
     """Принимает конкретную домашнюю работу homework."""
-    if "homework_name" not in homework:
-        raise KeyError("homework_name отсутствует в homework")
-    try:
-        homework_name = homework.get('homework_name')
-    except KeyError:
-        logger.error('Ошибка ключа "homework_name"')
-        raise KeyError('Ошибка ключа "homework_name"')
-    try:
-        homework_status = homework.get('status')
-    except KeyError:
-        logger.error('Ошибка ключа "status"')
-        raise KeyError('Ошибка ключа "status"')
-
+    if 'homework_name' not in homework:
+        raise KeyError('ключ "homework_name" отсутствует в homework')
+    elif 'status' not in homework:
+        raise KeyError('ключ "status" отсутствует в homework')
+    homework_name = homework.get('homework_name')
+    homework_status = homework.get('status')
     if homework_status not in HOMEWORK_STATUSES:
-        logger.error(f'Неизвестный статус выполнения работы {homework_name}')
         raise KeyError(
             f'Неизвестный статус выполнения работы {homework_name}'
         )
@@ -116,7 +88,7 @@ def parse_status(homework):
 
 def check_tokens():
     """Проверка доступности переменных окружения."""
-    if PRACTICUM_TOKEN and TELEGRAM_TOKEN and TELEGRAM_CHAT_ID:
+    if all([PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID]):
         return True
     else:
         return False
@@ -139,9 +111,8 @@ def main():
             response = get_api_answer(current_timestamp)
             current_timestamp = response.get('current_date')
             homework = check_response(response)
-            message = parse_status(homework)  # Возвращение строки ответа
+            message = parse_status(homework)
             if message != STATUS_HOME_WORK:
-                # print(message)
                 send_message(bot, message)
                 STATUS_HOME_WORK = message
             else:
@@ -152,9 +123,23 @@ def main():
                 send_message(bot, message)
                 STATUS_ERROR_MAIN = message
             time.sleep(RETRY_TIME)
-        else:
+        finally:
             time.sleep(RETRY_TIME)
 
 
 if __name__ == '__main__':
+    logging.basicConfig(
+        filename='bot_main.log',
+        level=logging.DEBUG,
+        format=LOG_FORMAT,
+        filemode='w',
+    )
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+    handler = StreamHandler(stream=sys.stdout)
+    formatter = logging.Formatter(
+        '%(asctime)s - %(levelname)s - %(message)s - %(funcName)s'
+    )
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
     main()
