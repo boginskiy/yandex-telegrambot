@@ -30,10 +30,10 @@ LOG_FORMAT = '%(asctime)s - %(levelname)s - %(message)s - %(funcName)s'
 def send_message(bot, message):
     """Отправка сообщений в Telegram чат."""
     try:
-        logger.info('Отправка нового сообщения')
+        logger.info('Сообщение готово к отправке')
         bot.send_message(TELEGRAM_CHAT_ID, message)
-    except Exception as error:
-        raise Exception(f'Ошибка при отправке сообщения: {error}')
+    except Exception:
+        logger.info('Ошибка при отправке сообщения')
     else:
         logger.info('Сообщение успешно отправлено')
 
@@ -47,7 +47,7 @@ def get_api_answer(current_timestamp):
     params = {'from_date': timestamp}
     try:
         response = requests.get(ENDPOINT, headers=HEADERS, params=params)
-    except Exception as error:
+    except err.RequestsError as error:
         raise err.RequestsError(f'Ошибка запроса API: {error}')
     if response.status_code != HTTPStatus.OK:
         status_code = response.status_code
@@ -63,9 +63,9 @@ def check_response(response):
         raise TypeError('Проверить type параметра response -> dict')
     homeworks = response.get('homeworks')
     if not homeworks:
-        raise Exception('Список домашних работ пуст')
+        raise err.EmptyListError('Список домашних работ пуст')
     elif type(homeworks) != list:
-        raise Exception('Проверить параметр "homeworks" -> list')
+        raise TypeError('Проверить параметр "homeworks" -> list')
     homework = homeworks[0]
     return homework
 
@@ -98,7 +98,7 @@ def main():
     """Основная логика работы бота."""
     if not check_tokens():
         logger.critical('Ошибка переменных окружения')
-        raise Exception(
+        raise err.EnvironmentVariablesError(
             'Ошибка переменных окружения, проверить содержание файла .env'
         )
     bot = Bot(token=TELEGRAM_TOKEN)
