@@ -118,6 +118,7 @@ def main():
             else:
                 logger.debug('Обновление статуса сообщения раз в 10 минут')
         except Exception as error:
+            logger.error(error)
             message = f'Сбой в работе программы главной функции: {error}'
             if message != STATUS_ERROR_MAIN:
                 send_message(bot, message)
