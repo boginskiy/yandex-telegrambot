@@ -1,10 +1,10 @@
 import os
 import sys
 import time
-import requests
 from http import HTTPStatus
 import logging
-from logging import StreamHandler
+from logging import StreamHandler, raiseExceptions
+import requests
 from dotenv import load_dotenv
 from telegram import Bot
 import exceptions as err
@@ -32,8 +32,8 @@ def send_message(bot, message):
     try:
         logger.info('Сообщение готово к отправке')
         bot.send_message(TELEGRAM_CHAT_ID, message)
-    except Exception:
-        logger.info('Ошибка при отправке сообщения')
+    except err.MessageError:
+        raise err.MessageError('Ошибка при отправке сообщения')
     else:
         logger.info('Сообщение успешно отправлено')
 
@@ -64,7 +64,7 @@ def check_response(response):
     homeworks = response.get('homeworks')
     if not homeworks:
         raise err.EmptyListError('Список домашних работ пуст')
-    elif type(homeworks) != list:
+    elif not isinstance(homeworks, list):
         raise TypeError('Проверить параметр "homeworks" -> list')
     homework = homeworks[0]
     return homework
@@ -88,10 +88,7 @@ def parse_status(homework):
 
 def check_tokens():
     """Проверка доступности переменных окружения."""
-    if all([PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID]):
-        return True
-    else:
-        return False
+    return all([PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID])
 
 
 def main():
