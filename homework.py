@@ -3,7 +3,7 @@ import sys
 import time
 from http import HTTPStatus
 import logging
-from logging import StreamHandler, raiseExceptions
+from logging import StreamHandler
 import requests
 from dotenv import load_dotenv
 from telegram import Bot
