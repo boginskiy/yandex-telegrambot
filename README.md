@@ -40,5 +40,32 @@ pip install -r requirements.txt
 python3 homework.py
 ```
 
+### **Дополнительная информация**
+Ознакомьтесь с **.env.example** файлом. На его основе со своими данными создайте **.env** файл в директории проекта.
+```
+.env.example
+
+PRACTICUM_TOKEN = Токен для доступа к данным Яндекс.Практикум
+TELEGRAM_TOKEN = API токен вашего бота
+TELEGRAM_CHAT_ID = Id идентификатор вашего чата
+```
+У вас должно получиться примерно так:
+```
+.env
+
+PRACTICUM_TOKEN = y0_AgAAAABbsMPDAAYckQAAAADPSrFmdbIiI6wdQYeQw6APl2vZaC1B-KG
+TELEGRAM_TOKEN = 5314486465:AAFxdybGdScu3aj0WPmnLnunVru7JuOdMtA
+TELEGRAM_CHAT_ID = 5339854955
+```
+---
+
+**PRACTICUM_TOKEN** - доступ к API Яндекс.Практикум возможен только по токену. Получить токен можно по адресу: _https://oauth.yandex.ru/authorize?response_type=token&client_id=1d0b9dd4d652455a9eb710d450ff456a_, при условии, что вы зарегистрированы.
+
+**TELEGRAM_TOKEN** - API токен вашего бота получаем путем отправки сообщение _/mybots_ в телеграмм канале _BotFather_, далее кликаем  бота, после проходим по кнопке _API Token_.
+
+**TELEGRAM_CHAT_ID** - id вашего чата получаем путем отправки сообщения в телеграмм канале _userinfobot_.
+
+---
+
 ### **Автор**
 [Богинский Дмитрий](https://github.com/boginskiy) - python разработчик
