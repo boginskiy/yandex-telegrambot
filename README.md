@@ -12,7 +12,7 @@ Telegram-бот обращается к API сервису Яндекс.Прак
 * Python 3.7
 * python-dotenv 0.19.0
 * python-telegram-bot 13.7
-* requests==2.26.0
+* requests 2.26.0
 
 ### Запуск проекта на Linux
 Клонировать проект c GitHub
